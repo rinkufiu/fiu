@@ -247,6 +247,28 @@ export const App: React.FC = () => {
   const [holidayFormData, setHolidayFormData] = useState<Partial<Holiday>>({ title: '', date: '', description: '' });
   const [tempSemesterTitle, setTempSemesterTitle] = useState('');
 
+  // Stable Current Day Name
+  const currentDayName: DayOfWeek = useMemo(() => {
+    const dayNames: DayOfWeek[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return dayNames[now.getDay()] as DayOfWeek;
+  }, [now.toDateString()]);
+
+  // Dashboard Analytics
+  const dashboardAnalytics = useMemo(() => {
+    const todayCount = schedule.filter(s => s.day === currentDayName).length;
+    const weeklyCount = schedule.length;
+    
+    const facultyPerformance = teachers.map(t => {
+      const daily = schedule.filter(s => s.teacherId === t.id && s.day === currentDayName).length;
+      const weekly = schedule.filter(s => s.teacherId === t.id).length;
+      return { ...t, daily, weekly };
+    }).sort((a, b) => b.weekly - a.weekly); // Sort by weekly load descending
+
+    const topPerformer = facultyPerformance[0];
+
+    return { todayCount, weeklyCount, facultyPerformance, topPerformer };
+  }, [schedule, teachers, currentDayName]);
+
   // Sync temp title when global changes
   useEffect(() => {
     setTempSemesterTitle(semesterTitle);
@@ -293,12 +315,6 @@ export const App: React.FC = () => {
     else newSet.add(id);
     setter(newSet);
   };
-
-  // Stable Current Day Name
-  const currentDayName: DayOfWeek = useMemo(() => {
-    const dayNames: DayOfWeek[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return dayNames[now.getDay()] as DayOfWeek;
-  }, [now.toDateString()]);
 
   // Public Routine Logic
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>('All');
@@ -704,19 +720,79 @@ export const App: React.FC = () => {
 
               {adminTab === 'dashboard' && (
                 <div className="space-y-6 px-1">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
-                        <Activity className="text-blue-600 mb-3" size={24} />
-                        <p className="text-[24px] font-black text-[#0f172a]">{stats.dailyLiveUsers}</p>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Active Now</p>
-                      </div>
-                      <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
-                        <BarChart3 className="text-emerald-600 mb-3" size={24} />
-                        <p className="text-[24px] font-black text-[#0f172a]">{stats.totalDailyViews}</p>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today's Visits</p>
+                  {/* Row 1: Traffic Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
+                      <Activity className="text-blue-600 mb-3" size={24} />
+                      <p className="text-[24px] font-black text-[#0f172a]">{stats.dailyLiveUsers}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Active Now</p>
+                    </div>
+                    <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
+                      <BarChart3 className="text-emerald-600 mb-3" size={24} />
+                      <p className="text-[24px] font-black text-[#0f172a]">{stats.totalDailyViews}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today's Visits</p>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Class Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
+                      <Layers className="text-violet-600 mb-3" size={24} />
+                      <p className="text-[24px] font-black text-[#0f172a]">{dashboardAnalytics.todayCount}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Classes Today</p>
+                    </div>
+                    <div style={ADMIN_CARD_STYLE} className="p-6 flex flex-col items-center text-center">
+                      <Calendar className="text-rose-600 mb-3" size={24} />
+                      <p className="text-[24px] font-black text-[#0f172a]">{dashboardAnalytics.weeklyCount}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Weekly Load</p>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Top Dedicated Faculty */}
+                  {dashboardAnalytics.topPerformer && (
+                    <div style={ADMIN_CARD_STYLE} className="p-6 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-10"><User size={100} /></div>
+                      <div className="flex items-center space-x-4 relative z-10">
+                        <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg overflow-hidden flex-shrink-0">
+                           <AvatarFace id={dashboardAnalytics.topPerformer.avatarId || 'avatar-1'} />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">⭐ Faculty of the Month</p>
+                           <h3 className="text-lg font-black text-[#0f172a] leading-tight">{dashboardAnalytics.topPerformer.name}</h3>
+                           <p className="text-[10px] text-slate-400 font-bold">{dashboardAnalytics.topPerformer.department} • {dashboardAnalytics.topPerformer.weekly} Classes/Week</p>
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                  {/* Row 4: Faculty Leaderboard */}
+                  <div style={ADMIN_CARD_STYLE} className="p-6">
+                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Faculty Performance Analytics</h3>
+                     <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                        {dashboardAnalytics.facultyPerformance.map((t, i) => (
+                           <div key={t.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                              <div className="flex items-center space-x-3">
+                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 flex-shrink-0">
+                                    <AvatarFace id={t.avatarId || 'avatar-1'} />
+                                 </div>
+                                 <div>
+                                    <p className="text-[11px] font-black text-[#0f172a]">{t.name}</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase">{t.department}</p>
+                                 </div>
+                              </div>
+                              <div className="flex space-x-4 text-right flex-shrink-0">
+                                 <div>
+                                    <p className="text-[12px] font-black text-blue-600">{t.daily}</p>
+                                    <p className="text-[7px] font-black text-slate-300 uppercase">Today</p>
+                                 </div>
+                                 <div>
+                                    <p className="text-[12px] font-black text-emerald-600">{t.weekly}</p>
+                                    <p className="text-[7px] font-black text-slate-300 uppercase">Week</p>
+                                 </div>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
                   </div>
                 </div>
               )}
