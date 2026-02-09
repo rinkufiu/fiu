@@ -6,7 +6,7 @@ import {
   RotateCcw, Calendar, Mail, X, Lock, Smartphone, Home, ShieldCheck, 
   MessageCircle, Bus, Trash2, Plus, ArrowLeft, Menu, Settings, Edit2, CheckCircle2,
   AlertCircle, BarChart3, Activity, Ban, Save, Layers, Building2, Library,
-  Smile, Filter, ChevronDown, CheckSquare, Square, Phone
+  Smile, Filter, ChevronDown, CheckSquare, Square, Phone, Users
 } from 'lucide-react';
 import { DayOfWeek, ClassEntry, FilterState, Teacher, Subject, ScheduleEntry, Category, SemesterOption, Department, Holiday, ClassStatus, Program } from './types';
 import { UNIVERSITY_LOGO, INITIAL_TEACHERS, INITIAL_SUBJECTS, INITIAL_SCHEDULE, INITIAL_DEPARTMENTS, INITIAL_HOLIDAYS, INITIAL_PROGRAMS } from './constants';
@@ -186,6 +186,7 @@ export const App: React.FC = () => {
   const [facultyDeptFilter, setFacultyDeptFilter] = useState('All');
   const [subjectProgFilter, setSubjectProgFilter] = useState('All');
   const [routineDayFilter, setRoutineDayFilter] = useState('All');
+  const [routineDeptFilter, setRoutineDeptFilter] = useState('All');
 
   // Bulk Selection States
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
@@ -467,15 +468,20 @@ export const App: React.FC = () => {
       setDepartments(prev => [...prev, { id: deptId!, name: deptFormData.deptName }]);
     }
 
-    const newProgram: Program = {
-      id: `p-${Date.now()}`,
-      title: deptFormData.programTitle,
-      departmentId: deptId!
-    };
+    if (editingId) {
+      setPrograms(prev => prev.map(p => p.id === editingId ? { ...p, title: deptFormData.programTitle, departmentId: deptId! } : p));
+    } else {
+      const newProgram: Program = {
+        id: `p-${Date.now()}`,
+        title: deptFormData.programTitle,
+        departmentId: deptId!
+      };
+      setPrograms(prev => [...prev, newProgram]);
+    }
     
-    setPrograms(prev => [...prev, newProgram]);
     setDeptFormData({ deptName: '', programTitle: '' });
     setIsDeptFormOpen(false);
+    setEditingId(null);
   };
 
   const handleHolidaySubmit = (e: React.FormEvent) => {
@@ -643,6 +649,64 @@ export const App: React.FC = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
+            
+            <AnimatePresence>
+              {activeContactModal && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md" onClick={() => setActiveContactModal(null)}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-sm p-8 relative" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setActiveContactModal(null)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-500 transition-colors bg-white/50 rounded-full"><X size={20} /></button>
+                    
+                    <div className="flex flex-col items-center text-center mb-8">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl mb-4">
+                        <AvatarFace id={activeContactModal.teacher.avatarId || 'avatar-1'} />
+                      </div>
+                      <h3 className="text-xl font-black text-[#0f172a] uppercase tracking-tight leading-tight">{activeContactModal.teacher.name}</h3>
+                      <span className="pill-badge bg-blue-100 text-blue-600 mt-2 tracking-widest">{activeContactModal.teacher.department}</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <a href={`mailto:${activeContactModal.teacher.email}`} className="flex items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                         <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors mr-4"><Mail size={18} /></div>
+                         <div className="flex-1 overflow-hidden">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email Address</p>
+                           <p className="text-xs font-bold text-[#0f172a] truncate">{activeContactModal.teacher.email}</p>
+                         </div>
+                      </a>
+
+                      {activeContactModal.teacher.whatsapp && (
+                        <button onClick={() => window.open(`https://wa.me/${activeContactModal.teacher.whatsapp?.replace(/\D/g,'')}`, '_blank')} className="w-full flex items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all group text-left">
+                           <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors mr-4"><MessageCircle size={18} /></div>
+                           <div className="flex-1">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Direct Message</p>
+                             <p className="text-xs font-bold text-[#0f172a]">Personal WhatsApp</p>
+                           </div>
+                        </button>
+                      )}
+
+                      {activeContactModal.subject.whatsapp && (
+                        <button onClick={() => window.open(activeContactModal.subject.whatsapp, '_blank')} className="w-full flex items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all group text-left">
+                           <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:bg-indigo-100 transition-colors mr-4"><Users size={18} /></div>
+                           <div className="flex-1">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Course Community</p>
+                             <p className="text-xs font-bold text-[#0f172a]">SUB WA GROUP</p>
+                           </div>
+                        </button>
+                      )}
+
+                      {activeContactModal.teacher.deptWhatsapp && (
+                        <button onClick={() => window.open(activeContactModal.teacher.deptWhatsapp, '_blank')} className="w-full flex items-center p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all group text-left">
+                           <div className="w-10 h-10 bg-violet-50 rounded-full flex items-center justify-center text-violet-600 group-hover:bg-violet-100 transition-colors mr-4"><Building2 size={18} /></div>
+                           <div className="flex-1">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Department Hub</p>
+                             <p className="text-xs font-bold text-[#0f172a]">DEPT. WA GROUP</p>
+                           </div>
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </main>
       ) : (
@@ -709,9 +773,15 @@ export const App: React.FC = () => {
                       </select>
                     )}
                     {adminTab === 'routine' && (
-                      <select style={ADMIN_INPUT_STYLE} className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-transparent flex-shrink-0" value={routineDayFilter} onChange={e => setRoutineDayFilter(e.target.value)}>
-                        {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
+                      <>
+                        <select style={ADMIN_INPUT_STYLE} className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-transparent flex-shrink-0" value={routineDayFilter} onChange={e => setRoutineDayFilter(e.target.value)}>
+                          {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <select style={ADMIN_INPUT_STYLE} className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-transparent flex-shrink-0" value={routineDeptFilter} onChange={e => setRoutineDeptFilter(e.target.value)}>
+                          <option value="All">All Depts</option>
+                          {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                        </select>
+                      </>
                     )}
                   </div>
                   )}
@@ -803,6 +873,7 @@ export const App: React.FC = () => {
                     <button onClick={() => setIsRoutineFormOpen(true)} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center active:scale-95 transition-all mb-4"><Plus size={18} className="mr-2" /> Add Schedule Entry</button>
                     {schedule.filter(s => 
                       (routineDayFilter === 'All' || s.day === routineDayFilter) &&
+                      (routineDeptFilter === 'All' || subjects.find(sub => sub.id === s.subjectId)?.department === routineDeptFilter) &&
                       (s.day.toLowerCase().includes(adminSearch.toLowerCase()) || subjects.find(sub => sub.id === s.subjectId)?.title.toLowerCase().includes(adminSearch.toLowerCase()))
                     ).map(slot => {
                       const subj = subjects.find(sub => sub.id === slot.subjectId);
@@ -890,7 +961,17 @@ export const App: React.FC = () => {
                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{dept?.name}</p>
                              <p className="text-sm font-black text-[#0f172a] leading-tight">{prog.title}</p>
                           </div>
-                          <button onClick={() => setPrograms(prev => prev.filter(p => p.id !== prog.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                          <div className="flex items-center space-x-1">
+                              <button onClick={() => {
+                                  setEditingId(prog.id);
+                                  setDeptFormData({
+                                      deptName: dept?.name || '',
+                                      programTitle: prog.title
+                                  });
+                                  setIsDeptFormOpen(true);
+                              }} className="p-2 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
+                              <button onClick={() => setPrograms(prev => prev.filter(p => p.id !== prog.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                          </div>
                         </motion.div>
                       );
                     })}
@@ -1122,8 +1203,8 @@ export const App: React.FC = () => {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeptFormOpen(false)}>
                     <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-md p-10" onClick={e => e.stopPropagation()}>
                        <div className="flex items-center justify-between mb-8">
-                         <div className="flex items-center space-x-3"><GraduationCap className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">Add Dept & Program</h3></div>
-                         <button onClick={() => setIsDeptFormOpen(false)} className="text-slate-400 p-2"><X size={20}/></button>
+                         <div className="flex items-center space-x-3"><GraduationCap className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Dept & Program</h3></div>
+                         <button onClick={() => { setIsDeptFormOpen(false); setEditingId(null); setDeptFormData({ deptName: '', programTitle: '' }); }} className="text-slate-400 p-2"><X size={20}/></button>
                        </div>
                        <form onSubmit={handleDeptSubmit} className="space-y-4">
                          <div className="space-y-1">
