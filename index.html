@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spring Semester Smart Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Outfit', sans-serif;
+        background: #f1f7fe;
+        min-height: 100vh;
+        color: #1e293b;
+        letter-spacing: -0.01em;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      /* Image Match Shadows & Depth */
+      .fiu-card-shadow {
+        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.05), 0 5px 15px -3px rgba(0, 0, 0, 0.03);
+      }
+
+      .routine-card {
+        border-radius: 32px;
+        background: linear-gradient(225deg, #cacaca, #f0f0f0);
+        box-shadow: -23px 23px 38px #9b9b9b, 23px -23px 38px #ffffff;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+      }
+      
+      .routine-card-active {
+        border-radius: 32px !important;
+        background: linear-gradient(225deg, #dee9fb, #f0fdf4) !important;
+        box-shadow: -23px 23px 38px #ccd7df, 23px -23px 38px #ffffff !important;
+        border: none !important;
+      }
+
+      .time-capsule {
+        background: #ffffff;
+        border-radius: 2rem;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+      }
+
+      .pill-badge {
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.8rem;
+        font-weight: 800;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      @keyframes zoomPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+      .animate-zoom-pulse {
+        animation: zoomPulse 3s ease-in-out infinite;
+      }
+
+      @keyframes tilt-shaking {
+        0% { transform: rotate(0deg); }
+        25% { transform: rotate(5deg); }
+        50% { transform: rotate(0deg); }
+        75% { transform: rotate(-5deg); }
+        100% { transform: rotate(0deg); }
+      }
+      .animate-tilt-shaking {
+        animation: tilt-shaking 0.3s ease-in-out infinite;
+      }
+
+      @keyframes rapidBlink {
+        0%, 100% { opacity: 1; transform: scale(1.4); filter: brightness(1.5) drop-shadow(0 0 5px #16a34a); }
+        50% { opacity: 0.05; transform: scale(0.6); filter: brightness(0.8); }
+      }
+      .animate-rapid-blink {
+        animation: rapidBlink 0.15s ease-in-out infinite;
+      }
+
+      .custom-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23cbd5e1' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1.5rem center;
+        background-size: 0.8rem;
+      }
+
+      .origami-toggle {
+        --paper-color: #ffffff;
+        --shadow-dark: #d1d1d6;
+        --shadow-light: #ffffff;
+        --accent-stone: #ffffff;
+        --accent-clay: #000000;
+        position: relative;
+        display: inline-block;
+        width: 100px;
+        height: 50px;
+        cursor: pointer;
+      }
+      .origami-toggle .origami-input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .origami-toggle .origami-paper {
+        position: absolute;
+        inset: 0;
+        background-color: var(--paper-color);
+        border-radius: 12px;
+        box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+      .origami-toggle .origami-fold {
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--accent-clay);
+        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: skewX(-15deg);
+        opacity: 0;
+      }
+      .origami-toggle .origami-knob {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        width: 40px;
+        height: 40px;
+        background-color: var(--paper-color);
+        border-radius: 8px;
+        box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+        transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+      }
+      .origami-toggle .origami-texture {
+        width: 4px;
+        height: 16px;
+        background: var(--shadow-dark);
+        border-radius: 10px;
+        box-shadow: 8px 0 var(--shadow-dark), -8px 0 var(--shadow-dark);
+        transition: all 0.4s ease;
+      }
+      .origami-toggle .origami-input:checked + .origami-paper {
+        box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+      .origami-toggle .origami-input:checked + .origami-paper .origami-fold {
+        left: 0;
+        transform: skewX(0deg);
+        opacity: 1;
+      }
+      .origami-toggle .origami-input:checked + .origami-paper .origami-knob {
+        left: calc(100% - 45px);
+        background-color: var(--accent-stone);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        transform: rotate(90deg);
+      }
+      .origami-toggle .origami-input:checked + .origami-paper .origami-knob .origami-texture {
+        background: #000000;
+        box-shadow: 8px 0 #000000, -8px 0 #000000;
+        height: 4px;
+      }
+      .origami-toggle:active .origami-knob {
+        transform: scale(0.85);
+      }
+
+      .neumorphic-day-btn {
+        background: #e8e8e8;
+        color: #090909;
+        border: 1px solid #e8e8e8;
+        box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+      }
+      .neumorphic-day-btn:active {
+        box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
+        color: #666;
+        transform: scale(0.97);
+      }
+      .neumorphic-day-btn-selected {
+        background: #2563eb;
+        color: #ffffff;
+        border: 1px solid #2563eb;
+        box-shadow: 6px 6px 12px rgba(37, 99, 235, 0.4), -6px -6px 12px #ffffff;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        transform: scale(1.05);
+      }
+
+      .neumorphic-search-container {
+        border-radius: 32px;
+        background: linear-gradient(225deg, #cacaca, #f0f0f0);
+        box-shadow: -23px 23px 38px #9b9b9b, 23px -23px 38px #ffffff;
+        border: none;
+      }
+
+      .neumorphic-blue-btn {
+        background: #2563eb;
+        color: #ffffff;
+        border: 1px solid #2563eb;
+        box-shadow: 6px 6px 12px rgba(37, 99, 235, 0.4), -6px -6px 12px #ffffff;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* ADMIN LOGIN PORTAL STYLES */
+      .login-form {
+        position: relative;
+        display: block;
+        padding: 2.2rem;
+        max-width: 350px;
+        background: linear-gradient(14deg, rgba(2,0,36, 0.8) 0%, rgba(24, 24, 65, 0.7) 66%, 
+                  rgb(20, 76, 99) 100%), radial-gradient(circle, rgba(2,0,36, 0.5) 0%, 
+                  rgba(32, 15, 53, 0.2) 65%, rgba(14, 29, 28, 0.9) 100%);
+        border: 2px solid #fff;
+        -webkit-box-shadow: rgba(0,212,255) 0px 0px 50px -15px;
+        box-shadow: rgba(0,212,255) 0px 0px 50px -15px;
+        overflow: hidden;
+        z-index: +1;
+      }
+
+      .input-container {
+        position: relative;
+      }
+
+      .input-container input, .login-form button {
+        outline: none;
+        border: 2px solid #ffffff;
+        margin: 8px 0;
+        font-family: monospace;
+      }
+
+      .input-container input {
+        background-color: #fff;
+        padding: 6px;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        width: 250px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      }
+
+      .submit {
+        position: relative;
+        display: block;
+        padding: 8px;
+        background-color: #c0c0c0;
+        color: #ffffff;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: 500;
+        width: 100%;
+        text-transform: uppercase;
+        overflow: hidden;
+      }
+
+      .submit:hover {
+        -webkit-transition: all 0.2s ease-out;
+        -moz-transition: all 0.2s ease-out;
+        transition: all 0.2s ease-out;
+        border-radius: 3.9px;
+        box-shadow: 4px 5px 17px -4px #ffffff;
+        cursor: pointer;
+      }
+
+      .submit:hover::before {
+        -webkit-animation: sh02 0.5s 0s linear;
+        -moz-animation: sh02 0.5s 0s linear;
+        animation: sh02 .5s 0s linear;
+      }
+
+      .submit::before {
+        content: '';
+        display: block;
+        width: 0px;
+        height: 85%;
+        position: absolute;
+        top: 50%;
+        left: 0%;
+        opacity: 0;
+        background: #fff;
+        box-shadow: 0 0 50px 30px #fff;
+        -webkit-transform: skewX(-20deg) translateY(-50%);
+        -moz-transform: skewX(-20deg) translateY(-50%);
+        -ms-transform: skewX(-20deg) translateY(-50%);
+        -o-transform: skewX(-20deg) translateY(-50%);
+        transform: skewX(-20deg) translateY(-50%);
+      }
+
+      @keyframes sh02 {
+        from { opacity: 0; left: 0%; }
+        50% { opacity: 1; }
+        to { opacity: 0; left: 100%; }
+      }
+
+      .signup-link {
+        color: #c0c0c0;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        text-align: center;
+        font-family: monospace;
+      }
+
+      .signup-link a {
+        color: #fff;
+        text-decoration: none;
+      }
+
+      .form-title {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        font-family: monospace;
+        font-weight: 600;
+        text-align: center;
+        color: #fff;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
+        animation-duration: 1.5s;
+        overflow: hidden;
+        transition: .12s;
+      }
+
+      .form-title span {
+        animation: flickering 2s linear infinite both;
+      }
+
+      .title-2 {
+        display: block;
+        margin-top: -0.5rem;
+        font-size: 2.1rem;
+        font-weight: 800;
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+        -webkit-text-stroke: #fff 0.1rem;
+        letter-spacing: 0.2rem;
+        color: transparent;
+        position: relative;
+        text-shadow: 0px 0px 16px #CECECE;
+      }
+
+      .title-2 span::before,
+      .title-2 span::after {
+        content: '—';
+      }
+
+      @keyframes flickering {
+        0%, 100% { opacity: 1; }
+        41.99% { opacity: 1; }
+        42% { opacity: 0; }
+        43% { opacity: 0; }
+        43.01% { opacity: 1; }
+        47.99% { opacity: 1; }
+        48% { opacity: 0; }
+        49% { opacity: 0; }
+        49.01% { opacity: 1; }
+      }
+
+      .bg-stars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        background-size: cover;
+        animation: animateBg 50s linear infinite;
+        overflow: hidden;
+      }
+
+      @keyframes animateBg {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+      }
+
+      .portal-star {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 4px rgba(255,255,255,0.1),0 0 0 8px rgba(255,255,255,0.1),0 0 20px rgba(255,255,255,0.1);
+        animation: animatePortalStar 3s linear infinite;
+      }
+
+      .portal-star::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 300px;
+        height: 1px;
+        background: linear-gradient(90deg,#fff,transparent);
+      }
+
+      @keyframes animatePortalStar {
+        0% { transform: rotate(315deg) translateX(0); opacity: 1; }
+        70% { opacity: 1; }
+        100% { transform: rotate(315deg) translateX(-1000px); opacity: 0; }
+      }
+
+      .portal-star:nth-child(1) { top: 0; right: 0; left: initial; animation-delay: 0s; animation-duration: 1s; }
+      .portal-star:nth-child(2) { top: 0; right: 100px; left: initial; animation-delay: 0.2s; animation-duration: 3s; }
+      .portal-star:nth-child(3) { top: 0; right: 220px; left: initial; animation-delay: 2.75s; animation-duration: 2.75s; }
+      .portal-star:nth-child(4) { top: 0; right: -220px; left: initial; animation-delay: 1.6s; animation-duration: 1.6s; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "framer-motion": "https://esm.sh/framer-motion@^12.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
