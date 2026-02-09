@@ -6,7 +6,7 @@ import {
   RotateCcw, Calendar, Mail, X, Lock, Smartphone, Home, ShieldCheck, 
   MessageCircle, Bus, Trash2, Plus, ArrowLeft, Menu, Settings, Edit2, CheckCircle2,
   AlertCircle, BarChart3, Activity, Ban, Save, Layers, Building2, Library,
-  ImageIcon, LinkIcon, Smile, Filter, ChevronDown, CheckSquare, Square
+  Smile, Filter, ChevronDown, CheckSquare, Square
 } from 'lucide-react';
 import { DayOfWeek, ClassEntry, FilterState, Teacher, Subject, ScheduleEntry, Category, SemesterOption, Department, Holiday, ClassStatus, Program } from './types';
 import { UNIVERSITY_LOGO, INITIAL_TEACHERS, INITIAL_SUBJECTS, INITIAL_SCHEDULE, INITIAL_DEPARTMENTS, INITIAL_HOLIDAYS, INITIAL_PROGRAMS } from './constants';
@@ -28,6 +28,13 @@ const ADMIN_CARD_STYLE = {
   borderRadius: '50px',
   background: '#e0e0e0',
   boxShadow: '20px 20px 60px #bebebe, -20px -20px 60px #ffffff',
+  border: 'none'
+};
+
+const ADMIN_MENU_STYLE = {
+  borderRadius: '16px',
+  background: '#e0e0e0',
+  boxShadow: '-23px 23px 38px #9b9b9b, 23px -23px 38px #ffffff',
   border: 'none'
 };
 
@@ -444,7 +451,6 @@ export const App: React.FC = () => {
     setFormErrors({});
   };
 
-  // Bus Track View
   if (view === 'bus-track') {
     return (
       <div className="max-w-xl mx-auto px-6 py-12 md:py-20 min-h-screen flex flex-col">
@@ -607,7 +613,6 @@ export const App: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-6 bg-[#e0e0e0] p-6 rounded-[50px] min-h-screen">
-              {/* Admin Panel Header */}
               <div style={ADMIN_CARD_STYLE} className="flex items-center justify-between p-6">
                 <button onClick={() => setIsAdminMenuOpen(true)} className="p-4 bg-[#e0e0e0] rounded-2xl text-slate-500 active:scale-95 transition-all shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] group hover:text-blue-600">
                    <Menu size={24} className="transition-colors" />
@@ -618,7 +623,6 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Advanced Filtering & Keyword Suggestions */}
               {adminTab !== 'dashboard' && adminTab !== 'settings' && adminTab !== 'semester' && (
                 <div className="space-y-4 px-2">
                   <div className="relative">
@@ -682,7 +686,6 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Admin Dashboard: Live Reports */}
               {adminTab === 'dashboard' && (
                 <div className="space-y-6 px-1">
                   <div className="grid grid-cols-1 gap-6">
@@ -722,7 +725,6 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Admin Management Lists */}
               <div className="space-y-4 px-1 pb-32">
                 {adminTab === 'routine' && (
                   <div className="space-y-3">
@@ -810,23 +812,28 @@ export const App: React.FC = () => {
                 )}
               </div>
 
-              {/* Responsive Admin Hamburger Menu */}
+              {/* Redesigned Admin Hamburger Menu */}
               <AnimatePresence>
                 {isAdminMenuOpen && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[800] flex items-center justify-center p-6 md:p-12 bg-slate-900/80 backdrop-blur-2xl" onClick={() => setIsAdminMenuOpen(false)}>
-                    {/* Fixed High-Contrast Close Button for Mobile */}
-                    <button 
-                      onClick={() => setIsAdminMenuOpen(false)} 
-                      className="fixed top-8 right-8 z-[810] p-4 bg-white rounded-full text-rose-600 shadow-[0_20px_50px_rgba(0,0,0,0.3)] active:scale-90 transition-transform"
-                      aria-label="Close Menu"
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[800] flex items-center justify-center p-6 md:p-12 bg-slate-900/60 backdrop-blur-xl" onClick={() => setIsAdminMenuOpen(false)}>
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }} 
+                      animate={{ scale: 1, opacity: 1 }} 
+                      exit={{ scale: 0.9, opacity: 0 }} 
+                      style={ADMIN_MENU_STYLE} 
+                      className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar p-10 relative" 
+                      onClick={e => e.stopPropagation()}
                     >
-                       <X size={28} strokeWidth={3} />
-                    </button>
-
-                    <motion.div initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-sm overflow-hidden p-10 relative" onClick={e => e.stopPropagation()}>
-                       <div className="flex items-center space-x-4 mb-12">
-                          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg"><Settings size={24}/></div>
-                          <h3 className="text-xl font-black text-[#0f172a] uppercase tracking-tight">Admin Console</h3>
+                       <button 
+                         onClick={() => setIsAdminMenuOpen(false)} 
+                         className="absolute top-6 right-6 p-3 bg-white rounded-full text-slate-900 hover:text-rose-600 shadow-xl transition-all active:scale-90"
+                       >
+                          <X size={20} strokeWidth={3} />
+                       </button>
+                       
+                       <div className="flex items-center space-x-4 mb-10">
+                          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Settings size={24}/></div>
+                          <h3 className="text-xl font-black text-[#0f172a] uppercase tracking-tight">Navigation</h3>
                        </div>
                        
                        <div className="space-y-4">
@@ -834,7 +841,7 @@ export const App: React.FC = () => {
                             <button 
                               key={tab.id} 
                               onClick={() => { setAdminTab(tab.id); setIsAdminMenuOpen(false); }}
-                              className={`w-full p-6 rounded-[2.5rem] flex items-center justify-between transition-all ${adminTab === tab.id ? 'text-blue-600 shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff]' : 'text-slate-400 hover:text-slate-600 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff]'}`}
+                              className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all ${adminTab === tab.id ? 'text-blue-600 shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff]' : 'text-slate-400 hover:text-slate-600 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff]'}`}
                             >
                               <span className="font-black text-[11px] uppercase tracking-widest">{tab.label}</span>
                               <tab.icon size={20} />
@@ -847,7 +854,7 @@ export const App: React.FC = () => {
                 )}
               </AnimatePresence>
 
-              {/* Form Modals with Validation */}
+              {/* Form Modals with Validation Feedbacks */}
               <AnimatePresence>
                 {isRoutineFormOpen && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsRoutineFormOpen(false)}>
@@ -879,8 +886,73 @@ export const App: React.FC = () => {
                                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
                          </div>
-                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all"><Save size={18} className="mr-2" /> Save Entry</button>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl"><Save size={18} className="mr-2" /> Save Entry</button>
                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isFacultyModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsFacultyModalOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-lg p-10" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><User className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Instructor</h3></div>
+                         <button onClick={() => { setIsFacultyModalOpen(false); setFormErrors({}); }} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleFacultySubmit} className="space-y-4">
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Full Name</label>{formErrors.name && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.name}</span>}</div>
+                            <input type="text" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.name ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.name} onChange={e => {setFacultyFormData({...facultyFormData, name: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, name: ''})); }} />
+                         </div>
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Department</label>{formErrors.department && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.department}</span>}</div>
+                             <select style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.department ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.department} onChange={e => {setFacultyFormData({...facultyFormData, department: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, department: ''})); }}>
+                                <option value="">Select Dept</option>
+                                {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                             </select>
+                         </div>
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Email</label>{formErrors.email && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.email}</span>}</div>
+                            <input type="email" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.email ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.email} onChange={e => {setFacultyFormData({...facultyFormData, email: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, email: ''})); }} />
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Submit Faculty</button>
+                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isSubjectModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsSubjectModalOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-lg p-10" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><BookOpen className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Course</h3></div>
+                         <button onClick={() => { setIsSubjectModalOpen(false); setFormErrors({}); }} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleSubjectSubmit} className="space-y-4">
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Title</label>{formErrors.title && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.title}</span>}</div>
+                            <input type="text" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.title ? 'border-rose-300' : 'border-transparent'}`} value={subjectFormData.title} onChange={e => {setSubjectFormData({...subjectFormData, title: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, title: ''})); }} />
+                         </div>
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Code</label>{formErrors.code && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.code}</span>}</div>
+                              <input type="text" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.code ? 'border-rose-300' : 'border-transparent'}`} value={subjectFormData.code} onChange={e => {setSubjectFormData({...subjectFormData, code: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, code: ''})); }} />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Category</label>
+                              <select style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={subjectFormData.category} onChange={e => setSubjectFormData({...subjectFormData, category: e.target.value as any})}>
+                                 <option value="General">General</option>
+                                 <option value="CSE">CSE</option>
+                                 <option value="Law">Law</option>
+                              </select>
+                           </div>
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Submit Course</button>
+                       </form>
                     </motion.div>
                   </motion.div>
                 )}
