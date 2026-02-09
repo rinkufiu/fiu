@@ -6,7 +6,7 @@ import {
   RotateCcw, Calendar, Mail, X, Lock, Smartphone, Home, ShieldCheck, 
   MessageCircle, Bus, Trash2, Plus, ArrowLeft, Menu, Settings, Edit2, CheckCircle2,
   AlertCircle, BarChart3, Activity, Ban, Save, Layers, Building2, Library,
-  Smile, Filter, ChevronDown, CheckSquare, Square
+  Smile, Filter, ChevronDown, CheckSquare, Square, Phone
 } from 'lucide-react';
 import { DayOfWeek, ClassEntry, FilterState, Teacher, Subject, ScheduleEntry, Category, SemesterOption, Department, Holiday, ClassStatus, Program } from './types';
 import { UNIVERSITY_LOGO, INITIAL_TEACHERS, INITIAL_SUBJECTS, INITIAL_SCHEDULE, INITIAL_DEPARTMENTS, INITIAL_HOLIDAYS, INITIAL_PROGRAMS } from './constants';
@@ -44,6 +44,8 @@ const ADMIN_INPUT_STYLE = {
   border: 'none',
   borderRadius: '20px'
 };
+
+const AVATAR_IDS = Array.from({ length: 20 }, (_, i) => `avatar-${i + 1}`);
 
 const parseTimeToMinutes = (timeStr: string) => {
   const [time, modifier] = timeStr.split(' ');
@@ -219,6 +221,8 @@ export const App: React.FC = () => {
   const [isRoutineFormOpen, setIsRoutineFormOpen] = useState(false);
   const [isFacultyModalOpen, setIsFacultyModalOpen] = useState(false);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isDeptFormOpen, setIsDeptFormOpen] = useState(false);
+  const [isHolidayFormOpen, setIsHolidayFormOpen] = useState(false);
 
   // Form Data States
   const [facultyFormData, setFacultyFormData] = useState<Partial<Teacher>>({
@@ -238,6 +242,15 @@ export const App: React.FC = () => {
     room: '',
     status: 'scheduled'
   });
+
+  const [deptFormData, setDeptFormData] = useState({ deptName: '', programTitle: '' });
+  const [holidayFormData, setHolidayFormData] = useState<Partial<Holiday>>({ title: '', date: '', description: '' });
+  const [tempSemesterTitle, setTempSemesterTitle] = useState('');
+
+  // Sync temp title when global changes
+  useEffect(() => {
+    setTempSemesterTitle(semesterTitle);
+  }, [semesterTitle]);
 
   // Time Sync & Analytics Sim
   useEffect(() => {
@@ -427,6 +440,47 @@ export const App: React.FC = () => {
     setEditingId(null);
   };
 
+  const handleDeptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deptFormData.deptName || !deptFormData.programTitle) return;
+
+    let deptId = departments.find(d => d.name.toLowerCase() === deptFormData.deptName.toLowerCase())?.id;
+    
+    if (!deptId) {
+      deptId = `d-${Date.now()}`;
+      setDepartments(prev => [...prev, { id: deptId!, name: deptFormData.deptName }]);
+    }
+
+    const newProgram: Program = {
+      id: `p-${Date.now()}`,
+      title: deptFormData.programTitle,
+      departmentId: deptId!
+    };
+    
+    setPrograms(prev => [...prev, newProgram]);
+    setDeptFormData({ deptName: '', programTitle: '' });
+    setIsDeptFormOpen(false);
+  };
+
+  const handleHolidaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!holidayFormData.title) return;
+    
+    if (editingId) {
+        setHolidays(prev => prev.map(h => h.id === editingId ? { ...h, ...holidayFormData } as Holiday : h));
+    } else {
+        setHolidays(prev => [...prev, { ...holidayFormData as Holiday, id: `h-${Date.now()}` }]);
+    }
+    setHolidayFormData({ title: '', date: '', description: '' });
+    setIsHolidayFormOpen(false);
+    setEditingId(null);
+  };
+
+  const handleSemesterSave = () => {
+    setSemesterTitle(tempSemesterTitle);
+    alert('Semester Title Updated!');
+  };
+
   if (view === 'bus-track') {
     return (
       <div className="max-w-xl mx-auto px-6 py-12 md:py-20 min-h-screen flex flex-col">
@@ -599,29 +653,32 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {adminTab !== 'dashboard' && adminTab !== 'settings' && adminTab !== 'semester' && (
+              {adminTab !== 'dashboard' && adminTab !== 'settings' && (
                 <div className="space-y-4 px-2">
-                  <div className="relative">
-                    <div className="relative flex items-center">
-                      <SearchIcon className="absolute left-6 text-slate-400" size={18} />
-                      <input 
-                        type="text" 
-                        placeholder={`Search ${adminTab === 'departments' ? 'Departments' : adminTab}...`} 
-                        style={ADMIN_INPUT_STYLE}
-                        className="w-full h-14 pl-14 pr-6 font-bold text-xs outline-none text-slate-700 focus:text-blue-700 transition-all"
-                        value={adminSearch}
-                        onChange={e => adminTab === 'routine' ? handleRoutineSearchChange(e.target.value) : setAdminSearch(e.target.value)}
-                      />
-                    </div>
-                    {adminTab === 'routine' && routineSuggestions.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-                        {routineSuggestions.map((s, idx) => (
-                          <button key={idx} onClick={() => { setAdminSearch(s); setRoutineSuggestions([]); }} className="w-full p-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-0">{s}</button>
-                        ))}
+                  {adminTab !== 'semester' && adminTab !== 'holidays' && (
+                    <div className="relative">
+                      <div className="relative flex items-center">
+                        <SearchIcon className="absolute left-6 text-slate-400" size={18} />
+                        <input 
+                          type="text" 
+                          placeholder={`Search ${adminTab === 'departments' ? 'Departments' : adminTab}...`} 
+                          style={ADMIN_INPUT_STYLE}
+                          className="w-full h-14 pl-14 pr-6 font-bold text-xs outline-none text-slate-700 focus:text-blue-700 transition-all"
+                          value={adminSearch}
+                          onChange={e => adminTab === 'routine' ? handleRoutineSearchChange(e.target.value) : setAdminSearch(e.target.value)}
+                        />
                       </div>
-                    )}
-                  </div>
+                      {adminTab === 'routine' && routineSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                          {routineSuggestions.map((s, idx) => (
+                            <button key={idx} onClick={() => { setAdminSearch(s); setRoutineSuggestions([]); }} className="w-full p-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-0">{s}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
+                  {(adminTab === 'routine' || adminTab === 'faculty' || adminTab === 'subjects') && (
                   <div className="flex space-x-3 overflow-x-auto no-scrollbar pb-2">
                     {adminTab === 'faculty' && (
                       <select style={ADMIN_INPUT_STYLE} className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-transparent flex-shrink-0" value={facultyDeptFilter} onChange={e => setFacultyDeptFilter(e.target.value)}>
@@ -641,6 +698,7 @@ export const App: React.FC = () => {
                       </select>
                     )}
                   </div>
+                  )}
                 </div>
               )}
 
@@ -688,7 +746,115 @@ export const App: React.FC = () => {
                     })}
                   </div>
                 )}
-                {/* Faculty and Subjects lists omitted for brevity, but logically present as in previous version */}
+                
+                {adminTab === 'faculty' && (
+                  <div className="space-y-3">
+                    <button onClick={() => setIsFacultyModalOpen(true)} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center active:scale-95 transition-all mb-4"><Plus size={18} className="mr-2" /> Add Course Instructor</button>
+                    {teachers.filter(t => 
+                      (facultyDeptFilter === 'All' || t.department === facultyDeptFilter) &&
+                      t.name.toLowerCase().includes(adminSearch.toLowerCase())
+                    ).map(teacher => {
+                      const isSelected = selectedFacultyIds.has(teacher.id);
+                      return (
+                        <motion.div layout key={teacher.id} style={ADMIN_CARD_STYLE} className={`p-6 flex items-center space-x-4 border-2 transition-all ${isSelected ? 'border-blue-500' : 'border-transparent'}`}>
+                          <button onClick={() => toggleSelection(teacher.id, selectedFacultyIds, setSelectedFacultyIds)} className="flex-shrink-0 text-slate-400 hover:text-blue-500">
+                             {isSelected ? <CheckSquare size={20} className="text-blue-500" /> : <Square size={20} />}
+                          </button>
+                          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lg"><AvatarFace id={teacher.avatarId || 'avatar-1'} /></div>
+                          <div className="flex-1">
+                             <p className="text-sm font-black text-[#0f172a]">{teacher.name}</p>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{teacher.department}</p>
+                          </div>
+                          <div className="flex space-x-1">
+                             <button onClick={() => { setEditingId(teacher.id); setFacultyFormData(teacher); setIsFacultyModalOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
+                             <button onClick={() => setTeachers(prev => prev.filter(t => t.id !== teacher.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {adminTab === 'subjects' && (
+                  <div className="space-y-3">
+                    <button onClick={() => setIsSubjectModalOpen(true)} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center active:scale-95 transition-all mb-4"><Plus size={18} className="mr-2" /> Add New Course</button>
+                    {subjects.filter(s => 
+                      (subjectProgFilter === 'All' || s.program === subjectProgFilter) &&
+                      (s.title.toLowerCase().includes(adminSearch.toLowerCase()) || s.code.toLowerCase().includes(adminSearch.toLowerCase()))
+                    ).map(subject => {
+                      const isSelected = selectedSubjectIds.has(subject.id);
+                      return (
+                        <motion.div layout key={subject.id} style={ADMIN_CARD_STYLE} className={`p-6 flex items-center space-x-4 border-2 transition-all ${isSelected ? 'border-blue-500' : 'border-transparent'}`}>
+                          <button onClick={() => toggleSelection(subject.id, selectedSubjectIds, setSelectedSubjectIds)} className="flex-shrink-0 text-slate-400 hover:text-blue-500">
+                             {isSelected ? <CheckSquare size={20} className="text-blue-500" /> : <Square size={20} />}
+                          </button>
+                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><BookOpen size={20} /></div>
+                          <div className="flex-1">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{subject.code}</p>
+                             <p className="text-sm font-black text-[#0f172a] leading-tight">{subject.title}</p>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                             <button onClick={() => { setEditingId(subject.id); setSubjectFormData(subject); setIsSubjectModalOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
+                             <button onClick={() => setSubjects(prev => prev.filter(s => s.id !== subject.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {adminTab === 'departments' && (
+                  <div className="space-y-3">
+                    <button onClick={() => setIsDeptFormOpen(true)} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center active:scale-95 transition-all mb-4"><Plus size={18} className="mr-2" /> Add Dept. & Program</button>
+                    {programs.map(prog => {
+                      const dept = departments.find(d => d.id === prog.departmentId);
+                      return (
+                        <motion.div layout key={prog.id} style={ADMIN_CARD_STYLE} className="p-6 flex items-center space-x-4 border-2 border-transparent">
+                          <div className="flex-1">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{dept?.name}</p>
+                             <p className="text-sm font-black text-[#0f172a] leading-tight">{prog.title}</p>
+                          </div>
+                          <button onClick={() => setPrograms(prev => prev.filter(p => p.id !== prog.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {adminTab === 'semester' && (
+                  <div className="space-y-6">
+                    <div style={ADMIN_CARD_STYLE} className="p-8">
+                       <h3 className="text-sm font-black text-[#0f172a] uppercase tracking-tight mb-4">Current Semester Title</h3>
+                       <input 
+                         type="text" 
+                         style={ADMIN_INPUT_STYLE} 
+                         className="w-full h-14 px-5 font-bold text-sm outline-none border-2 border-transparent mb-4" 
+                         value={tempSemesterTitle} 
+                         onChange={e => setTempSemesterTitle(e.target.value)} 
+                       />
+                       <button onClick={handleSemesterSave} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"><Save size={18} className="mr-2" /> Save Title</button>
+                    </div>
+                  </div>
+                )}
+
+                {adminTab === 'holidays' && (
+                  <div className="space-y-3">
+                     <button onClick={() => setIsHolidayFormOpen(true)} style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center active:scale-95 transition-all mb-4"><Plus size={18} className="mr-2" /> Add Holiday</button>
+                     {holidays.map(holiday => (
+                       <motion.div layout key={holiday.id} style={ADMIN_CARD_STYLE} className="p-6 flex items-center space-x-4 border-2 border-transparent">
+                          <div className="flex-1">
+                             <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{holiday.date}</p>
+                             <p className="text-sm font-black text-[#0f172a]">{holiday.title}</p>
+                             <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{holiday.description}</p>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                             <button onClick={() => { setEditingId(holiday.id); setHolidayFormData(holiday); setIsHolidayFormOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
+                             <button onClick={() => setHolidays(prev => prev.filter(h => h.id !== holiday.id))} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                          </div>
+                       </motion.div>
+                     ))}
+                  </div>
+                )}
               </div>
 
               <AnimatePresence>
@@ -730,6 +896,7 @@ export const App: React.FC = () => {
                 )}
               </AnimatePresence>
 
+              {/* Modals */}
               <AnimatePresence>
                 {isRoutineFormOpen && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsRoutineFormOpen(false)}>
@@ -739,12 +906,10 @@ export const App: React.FC = () => {
                          <button onClick={() => { setIsRoutineFormOpen(false); setFormErrors({}); }} className="text-slate-400 p-2"><X size={20}/></button>
                       </div>
                       <form onSubmit={handleRoutineSubmit} className="space-y-4">
-                         {/* Start Time - One line */}
                          <div className="space-y-1">
                             <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Start Time</label>
                             <TimePicker value={routineFormData.startTime || '08:00 am'} onChange={(v) => setRoutineFormData(p => ({ ...p, startTime: v }))} />
                          </div>
-                         {/* End Time - Second line */}
                          <div className="space-y-1">
                             <label className="text-[8px] font-black text-slate-400 uppercase ml-4">End Time</label>
                             <TimePicker value={routineFormData.endTime || '09:30 am'} onChange={(v) => setRoutineFormData(p => ({ ...p, endTime: v }))} />
@@ -769,6 +934,160 @@ export const App: React.FC = () => {
                          </div>
                          <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl"><Save size={18} className="mr-2" /> Save Entry</button>
                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isFacultyModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsFacultyModalOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-xl p-10 overflow-y-auto max-h-[90vh] no-scrollbar" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><User className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Instructor</h3></div>
+                         <button onClick={() => { setIsFacultyModalOpen(false); setFormErrors({}); }} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleFacultySubmit} className="space-y-4">
+                         <div className="space-y-2 mb-6">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Select Avatar Identity</label>
+                            <div className="grid grid-cols-5 gap-3 p-2">
+                               {AVATAR_IDS.map(id => (
+                                 <div key={id} onClick={() => setFacultyFormData({...facultyFormData, avatarId: id})} className={`aspect-square rounded-full cursor-pointer transition-all ${facultyFormData.avatarId === id ? 'ring-4 ring-blue-500 scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'}`}>
+                                    <AvatarFace id={id} />
+                                 </div>
+                               ))}
+                            </div>
+                         </div>
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Full Name</label>{formErrors.name && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.name}</span>}</div>
+                            <input type="text" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.name ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.name} onChange={e => {setFacultyFormData({...facultyFormData, name: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, name: ''})); }} />
+                         </div>
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Department</label>{formErrors.department && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.department}</span>}</div>
+                             <select style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.department ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.department} onChange={e => {setFacultyFormData({...facultyFormData, department: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, department: ''})); }}>
+                                <option value="">Select Dept</option>
+                                {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                             </select>
+                         </div>
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Email</label>{formErrors.email && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.email}</span>}</div>
+                            <input type="email" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.email ? 'border-rose-300' : 'border-transparent'}`} value={facultyFormData.email} onChange={e => {setFacultyFormData({...facultyFormData, email: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, email: ''})); }} />
+                         </div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Personal WhatsApp</label>
+                                <input type="text" placeholder="8801..." style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={facultyFormData.whatsapp} onChange={e => setFacultyFormData({...facultyFormData, whatsapp: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Dept. Group Link</label>
+                                <input type="text" placeholder="https://..." style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={facultyFormData.deptWhatsapp} onChange={e => setFacultyFormData({...facultyFormData, deptWhatsapp: e.target.value})} />
+                            </div>
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Submit Faculty</button>
+                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isSubjectModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsSubjectModalOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-lg p-10" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><BookOpen className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Course</h3></div>
+                         <button onClick={() => { setIsSubjectModalOpen(false); setFormErrors({}); }} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleSubjectSubmit} className="space-y-4">
+                         <div className="space-y-1">
+                            <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Course Title</label>{formErrors.title && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.title}</span>}</div>
+                            <input type="text" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.title ? 'border-rose-300' : 'border-transparent'}`} value={subjectFormData.title} onChange={e => {setSubjectFormData({...subjectFormData, title: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, title: ''})); }} />
+                         </div>
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <div className="flex justify-between px-4"><label className="text-[8px] font-black text-slate-400 uppercase">Code</label>{formErrors.code && <span className="text-[7px] text-rose-500 font-black uppercase">{formErrors.code}</span>}</div>
+                              <input type="text" placeholder="e.g. CSE3111" style={ADMIN_INPUT_STYLE} className={`w-full h-12 px-5 font-bold text-xs outline-none border-2 ${formErrors.code ? 'border-rose-300' : 'border-transparent'}`} value={subjectFormData.code} onChange={e => {setSubjectFormData({...subjectFormData, code: e.target.value}); if(e.target.value) setFormErrors(prev => ({...prev, code: ''})); }} />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Credit</label>
+                              <input type="text" style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={subjectFormData.credit} onChange={e => setSubjectFormData({...subjectFormData, credit: e.target.value})} />
+                           </div>
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Department</label>
+                            <select style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={subjectFormData.department} onChange={e => setSubjectFormData({...subjectFormData, department: e.target.value, program: ''})}>
+                               <option value="">Select Dept</option>
+                               {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                            </select>
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Program</label>
+                            <select style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={subjectFormData.program} onChange={e => setSubjectFormData({...subjectFormData, program: e.target.value})}>
+                               <option value="">Select Program</option>
+                               {programs.filter(p => {
+                                 const dept = departments.find(d => d.name === subjectFormData.department);
+                                 return dept ? p.departmentId === dept.id : true;
+                               }).map(p => <option key={p.id} value={p.title}>{p.title}</option>)}
+                            </select>
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Course WhatsApp Group</label>
+                            <input type="text" placeholder="https://..." style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={subjectFormData.whatsapp} onChange={e => setSubjectFormData({...subjectFormData, whatsapp: e.target.value})} />
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Submit Course</button>
+                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isDeptFormOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeptFormOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-md p-10" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><GraduationCap className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">Add Dept & Program</h3></div>
+                         <button onClick={() => setIsDeptFormOpen(false)} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleDeptSubmit} className="space-y-4">
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Department Name</label>
+                            <input type="text" placeholder="e.g. CSE" style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={deptFormData.deptName} onChange={e => setDeptFormData({...deptFormData, deptName: e.target.value})} />
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Program Title</label>
+                            <input type="text" placeholder="e.g. B.Sc. in CSE" style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={deptFormData.programTitle} onChange={e => setDeptFormData({...deptFormData, programTitle: e.target.value})} />
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Save Program</button>
+                       </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isHolidayFormOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsHolidayFormOpen(false)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={ADMIN_CARD_STYLE} className="w-full max-w-md p-10" onClick={e => e.stopPropagation()}>
+                       <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center space-x-3"><Calendar className="text-blue-600" size={24}/><h3 className="text-lg font-black text-[#0f172a] uppercase tracking-tight">{editingId ? 'Edit' : 'Add'} Holiday</h3></div>
+                         <button onClick={() => { setIsHolidayFormOpen(false); setEditingId(null); setHolidayFormData({ title: '', date: '', description: '' }); }} className="text-slate-400 p-2"><X size={20}/></button>
+                       </div>
+                       <form onSubmit={handleHolidaySubmit} className="space-y-4">
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Holiday Title</label>
+                            <input type="text" style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={holidayFormData.title} onChange={e => setHolidayFormData({...holidayFormData, title: e.target.value})} />
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Date</label>
+                            <input type="text" placeholder="e.g. 21 Feb 2026" style={ADMIN_INPUT_STYLE} className="w-full h-12 px-5 font-bold text-xs outline-none" value={holidayFormData.date} onChange={e => setHolidayFormData({...holidayFormData, date: e.target.value})} />
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-4">Description</label>
+                            <textarea style={{...ADMIN_INPUT_STYLE, borderRadius: '20px', padding: '15px'}} className="w-full h-24 font-bold text-xs outline-none resize-none" value={holidayFormData.description} onChange={e => setHolidayFormData({...holidayFormData, description: e.target.value})} />
+                         </div>
+                         <button type="submit" style={ADMIN_CARD_STYLE} className="w-full h-14 text-blue-600 font-black text-[11px] uppercase tracking-widest mt-4 active:scale-95 transition-all shadow-xl">Save Holiday</button>
+                       </form>
                     </motion.div>
                   </motion.div>
                 )}
